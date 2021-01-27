@@ -1,0 +1,60 @@
+<?php
+require_once( 'jpgraph/jpgraph.php' );
+require_once( 'jpgraph/jpgraph_line.php' );
+require_once( 'jpgraph/jpgraph_date.php' );
+
+function bytesToString( $bytes ) {
+	$bytes = floatval($bytes);
+	$Units = array( "", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi" );
+	foreach( $Units as $u ) {
+		#print( sprintf( "%s %sB\n", $bytes, $u) );
+		$b = $bytes / 1024;
+		if ($b > 1) {
+			$bytes = $b;
+		} else { break; }
+	}
+	return( sprintf( "%s %sB", round( $bytes, 3 ), $u ) );
+}
+$dataDir = ".";
+$dataFile = "du.json";
+
+$data = json_decode( file_get_contents( $dataFile ), $assoc = True );
+ksort( $data );
+
+
+$xData = array_keys( $data );
+$freeData = array_map( function( $a ) { return $a['free']; }, array_values( $data ) );
+$usedData = array_map( function( $a ) { return $a['used']; }, array_values( $data ) );
+$total = end($data);
+$total = $total['total'];
+
+/*
+var_dump( $data );
+print( "<br/>\n" );
+var_dump( $xData );
+
+print( "<br/>\n" );
+var_dump( $freeData );
+*/
+
+$graph = new Graph( 1400, 600 );
+$graph->SetScale( "datlin", 0, $total );
+$graph->SetScale( "datlin" );
+
+$lineFree = new LinePlot( $freeData, $xData );
+$lineFree->SetLegend( 'Free' );
+$graph->Add( $lineFree );
+
+/*
+$lineUsed = new LinePlot( $usedData, $xData );
+$lineUsed->SetLegend( 'Used' );
+$graph->Add( $lineUsed );
+*/
+
+$graph->yaxis->SetLabelFormatCallback('bytesToString');
+$graph->xaxis->SetLabelAngle( 90 );
+//$graph->yaxis->scale->SetGrace( 50 );
+
+$graph->SetMargin( 75, 5, 25, 75 );
+$graph->Stroke();
+?>
